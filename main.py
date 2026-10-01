@@ -1,46 +1,98 @@
 import argparse
-from pathlib import Path
+
 import yaml
-from src.video.loader import VideoLoader
-from src.video.sampler import FrameSampler
-from src.video.clip_buffer import ClipBuffer
 
 
-def load_config(path: str):
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+def load_config(path):
+    with open(path, "r", encoding="utf-8") as file:
+        config = yaml.safe_load(file)
+
+    if not isinstance(config, dict):
+        raise ValueError("Configuration must be a YAML mapping.")
+
+    return config
 
 
-def run(video_path: str, config_path: str = "config/settings.yaml"):
-    config = load_config(config_path)
-    sample_fps = float(config["video"]["sample_fps"])
-    clip_seconds = float(config["video"]["clip_seconds"])
+def run_ingestion(video_path, config):
+    from src.video.loader import VideoLoader
+    from src.video.sampler import FrameSampler
+    from src.video.clip_buffer import ClipBuffer
 
     with VideoLoader(video_path) as loader:
         meta = loader.metadata()
-        sampler = FrameSampler(meta.fps, sample_fps)
-        buffer = ClipBuffer(clip_seconds, sampler.sample_fps)
+
+        sampler = FrameSampler(
+            meta.fps,
+            float(config["video"]["sample_fps"]),
+        )
+        buffer = ClipBuffer(
+            float(config["video"]["clip_seconds"]),
+            sampler.sample_fps,
+        )
 
         sampled = 0
-        for frame_index, timestamp, frame in loader.frames():
-            if not sampler.should_sample(frame_index):
-                continue
-            buffer.add(frame_index, timestamp, frame)
-            sampled += 1
 
-        print("Video ingestion complete")
-        print(f"Path: {meta.path}")
-        print(f"Resolution: {meta.width}x{meta.height}")
-        print(f"FPS: {meta.fps:.2f}")
-        print(f"Frames: {meta.frame_count}")
-        print(f"Duration: {meta.duration_sec:.2f}s")
+        for index, timestamp, frame in loader.frames():
+            if sampler.should_sample(index):
+                buffer.add(index, timestamp, frame)
+                sampled += 1
+
+        print("Phase 1 - video ingestion complete")
         print(f"Sampled frames: {sampled}")
-        print(f"Clip buffer frames retained: {len(buffer.items())}")
+        print(f"Buffer retained: {len(buffer.items())}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Elderly Agentic Vision"
+    )
+    parser.add_argument("--video", required=True)
+    parser.add_argument(
+        "--config",
+        default="config/settings.yaml",
+    )
+    parser.add_argument(
+        "--phase",
+        choices=["ingest", "track", "calibrate-bed", "pose"],
+        default="track",
+    )
+    parser.add_argument(
+        "--calibration-second",
+        type=float,
+        default=0.0,
+    )
+
+    args = parser.parse_args()
+    config = load_config(args.config)
+
+    if args.phase == "ingest":
+        run_ingestion(args.video, config)
+
+    elif args.phase == "track":
+        from src.perception.pipeline import run_tracking
+
+        result = run_tracking(args.video, config)
+
+        for key, value in result.items():
+            print(f"{key}: {value}")
+
+    elif args.phase == "calibrate-bed":
+        from src.perception.bed_calibration import calibrate_bed
+
+        calibrate_bed(
+            args.video,
+            config["phase3"]["bed_region_file"],
+            args.calibration_second,
+        )
+
+    elif args.phase == "pose":
+        from src.perception.pose_pipeline import run_pose_context
+
+        result = run_pose_context(args.video, config)
+
+        for key, value in result.items():
+            print(f"{key}: {value}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Elderly Agentic Vision - Phase 1")
-    parser.add_argument("--video", required=True, help="Path to input video")
-    parser.add_argument("--config", default="config/settings.yaml")
-    args = parser.parse_args()
-    run(args.video, args.config)
+    main()
