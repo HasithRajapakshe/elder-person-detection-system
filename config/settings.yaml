@@ -2,5 +2,27 @@ video:
   sample_fps: 2.0
   clip_seconds: 5.0
   max_frames: null
+
+perception:
+  person_model: yolo11s.pt
+  tracker: config/botsort_custom.yaml
+  confidence: 0.10
+  iou: 0.50
+  device: null
+
 output:
-  directory: outputs
+  directory: outputs/tracking_v2
+
+phase3:
+  pose_model: yolo11s-pose.pt
+  tracker: config/botsort_custom.yaml
+  confidence: 0.10
+  iou: 0.50
+  device: null
+  keypoint_confidence: 0.40
+  bed_region_file: null
+  output_directory: outputs/phase3
+
+  # Provisional spatial thresholds; validate against your video.
+  bed_overlap_threshold: 0.30
+  near_bed_distance: 0.05
