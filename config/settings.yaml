@@ -1,0 +1,6 @@
+video:
+  sample_fps: 2.0
+  clip_seconds: 5.0
+  max_frames: null
+output:
+  directory: outputs

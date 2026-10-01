@@ -1,0 +1,14 @@
+start_time,end_time,action,is_fall
+0,9,None,False
+10,11,Stand,False
+12,16,None,False
+17,19,Stand,False
+20,29,None,False
+30,32,Stand,False
+33,33,Stand-Sit,False
+34,36,Sit,False
+37,40,Stand,False
+41,44,None,False
+45,46,Stand-Lie,True
+47,47,Sit-Stand,False
+48,48,Stand,False
