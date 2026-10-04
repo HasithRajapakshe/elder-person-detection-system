@@ -1,0 +1,20 @@
+# Custom BoT-SORT tracker config for elderly person monitoring.
+# Based on Ultralytics defaults with a larger track_buffer
+# to handle slow movement and brief occlusions.
+
+tracker_type: botsort
+track_high_thresh: 0.25
+track_low_thresh: 0.1
+new_track_thresh: 0.25
+track_buffer: 60
+match_thresh: 0.8
+fuse_score: true
+
+# Global motion compensation (assumes fixed camera)
+gmc_method: sparseOptFlow
+
+# ReID
+proximity_thresh: 0.5
+appearance_thresh: 0.8
+with_reid: false
+model: auto

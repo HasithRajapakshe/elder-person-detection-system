@@ -53,13 +53,17 @@ def main():
     )
     parser.add_argument(
         "--phase",
-        choices=["ingest", "track", "calibrate-bed", "pose"],
+        choices=["ingest", "track", "calibrate-bed", "pose", "analyze"],
         default="track",
     )
     parser.add_argument(
         "--calibration-second",
         type=float,
         default=0.0,
+    )
+    parser.add_argument(
+        "--ground-truth",
+        default=None,
     )
 
     args = parser.parse_args()
@@ -90,6 +94,18 @@ def main():
 
         result = run_pose_context(args.video, config)
 
+        for key, value in result.items():
+            print(f"{key}: {value}")
+            
+    elif args.phase == "analyze":
+        from src.temporal.pipeline import run_analysis
+        
+        result = run_analysis(
+            video_path=args.video,
+            config=config,
+            ground_truth_path=args.ground_truth,
+        )
+        
         for key, value in result.items():
             print(f"{key}: {value}")
 
